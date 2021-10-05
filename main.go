@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	//"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -14,7 +13,7 @@ type app struct {
   Name  string
   Path  string
 	Main  bool
-	id string `gorm:"primaryKey"`
+	Id string `gorm:"primaryKey"`
 }
 
 func root(w http.ResponseWriter, h *http.Request) {
@@ -32,7 +31,7 @@ func main() {
 
 	db.Table("apps").AutoMigrate(&app{})
 
-	db.Create(&app{Name: "Test", Path: "apps/test", Main: true, id: "test"})
+	db.Create(&app{Name: "Test", Path: "apps/test", Main: true, Id: "test"})
 
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
@@ -44,5 +43,5 @@ func apps(w http.ResponseWriter, h *http.Request) {
 	id := strings.Replace(h.URL.Path, "/apps/", "", 1)
 	fmt.Println(id)
 	var theapp app
-	db.First(&theapp, "id = ?", id)
+	db.First(&theapp, "Id = ?", id)
 }
