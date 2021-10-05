@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strings"
 	"gorm.io/gorm"
+	"os"
 	"gorm.io/driver/sqlite"
+	"github.com/buger/jsonparser"
 )
 
 type app struct {
@@ -39,9 +41,23 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func remove(slice []string, s int) []string {
+    return append(slice[:s], slice[s+1:]...)
+}
+
 func apps(w http.ResponseWriter, h *http.Request) {
-	id := strings.Replace(h.URL.Path, "/apps/", "", 1)
-	fmt.Println(id)
+	idd := strings.Replace(h.URL.Path, "/apps/", "", 1)
+	id := strings.Split(idd, "/")
 	var theapp app
-	db.First(&theapp, "Id = ?", id)
+	db.First(&theapp, "Id = ?", id[0])
+	dat, err := os.ReadFile(theapp.Path + "/app.json")
+  if err != nil {
+		panic(err)
+	}
+	id = id[1:]
+	file, e := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"))
+	if e != nil {
+		fmt.Println("Not found")
+	}
+	http.ServeFile(w, h, theapp.Path + "/" + file)
 }
