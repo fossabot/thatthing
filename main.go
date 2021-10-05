@@ -41,10 +41,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func remove(slice []string, s int) []string {
-    return append(slice[:s], slice[s+1:]...)
-}
-
 func apps(w http.ResponseWriter, h *http.Request) {
 	idd := strings.Replace(h.URL.Path, "/apps/", "", 1)
 	id := strings.Split(idd, "/")
