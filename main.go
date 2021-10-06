@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -9,22 +10,24 @@ import (
 	"gorm.io/driver/sqlite"
 	"github.com/buger/jsonparser"
 	"html/template"
+	"os/exec"
 )
 
 type app struct {
-  Name  string
-  Path  string
+	Name  string
+	Path  string
 	Id string `gorm:"primaryKey"`
 }
 
 var db *gorm.DB
 
 func main() {
+	fmt.Println("Connecting to database...")
 	dbb, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	db = dbb
-  if err != nil {
-    panic("Failed to connect to the database")
-  }
+	if err != nil {
+		panic("Failed to connect to the database")
+	}
 
 	db.Table("apps").AutoMigrate(&app{})
 
@@ -33,6 +36,16 @@ func main() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
 
+	fmt.Println("Building apps...")
+	var pgs []app
+	db.Find(&pgs)
+	for _, v := range pgs {
+		cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path + "/main.go")
+		cmd.Run()
+		os.Rename("main.so", v.Path + "/main.so")
+	}
+
+	fmt.Println("Running...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -46,11 +59,11 @@ func apps(w http.ResponseWriter, h *http.Request) {
 	var theapp app
 	db.First(&theapp, "Id = ?", id[0])
 	/*if er != nil {
-		http.NotFound(w, h)
-		return
+	http.NotFound(w, h)
+	return
 	}*/
 	dat, err := os.ReadFile(theapp.Path + "/app.json")
-  if err != nil {
+	if err != nil {
 		panic(err)
 	}
 	public, _ := jsonparser.GetBoolean(dat, "public")
