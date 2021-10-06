@@ -1,6 +1,9 @@
 {
   "stuff": {
-    "/": "index.html"
+    "/": {
+      "type": "func",
+      "thing": "RunMe"
+    }
   },
   "public": true
 }

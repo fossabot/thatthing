@@ -11,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"html/template"
 	"os/exec"
+	"plugin"
 )
 
 type app struct {
@@ -72,11 +73,24 @@ func apps(w http.ResponseWriter, h *http.Request) {
 		return
 	}
 	id = id[1:]
-	file, e := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"))
+	file, e := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"), "type")
 	if e != nil {
 		http.NotFound(w, h)
+		return
 	}
-	http.ServeFile(w, h, theapp.Path + "/" + file)
+	if file == "file" {
+		thing, _ := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"), "thing")
+		http.ServeFile(w, h, theapp.Path + "/" + thing)
+	} else {
+		theapp, _ := plugin.Open(theapp.Path + "/main.so")
+		thing, _ := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"), "thing")
+		v, err := theapp.Lookup(thing)
+		if err != nil {
+			http.NotFound(w, h)
+			return
+		}
+		v.(func(w http.ResponseWriter, h *http.Request))(w, h)
+	}
 }
 
 func root(w http.ResponseWriter, h *http.Request) {
