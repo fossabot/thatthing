@@ -14,7 +14,6 @@ import (
 type app struct {
   Name  string
   Path  string
-	Main  bool
 	Id string `gorm:"primaryKey"`
 }
 
@@ -29,7 +28,7 @@ func main() {
 
 	db.Table("apps").AutoMigrate(&app{})
 
-	db.Create(&app{Name: "Test", Path: "apps/test", Main: true, Id: "test"})
+	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test"})
 
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
