@@ -41,9 +41,14 @@ func main() {
 	var pgs []app
 	db.Find(&pgs)
 	for _, v := range pgs {
-		cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path + "/main.go")
-		cmd.Run()
-		os.Rename("main.so", v.Path + "/main.so")
+		if _, err := os.Stat(v.Path + "/main.go"); err == nil {
+			cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path + "/main.go")
+			cmd.Run()
+			os.Rename("main.so", v.Path + "/main.so")
+			} else if os.IsNotExist(err) {
+				fmt.Println("The app '" + v.Id + "' doesn't have a main.go file")
+			} else {}
+		}
 	}
 
 	fmt.Println("Running...")
