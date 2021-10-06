@@ -45,11 +45,11 @@ func apps(w http.ResponseWriter, h *http.Request) {
 	}
 	id := strings.Split(idd, "/")
 	var theapp app
-	er := db.First(&theapp, "Id = ?", id[0])
-	if er != nil {
+	db.First(&theapp, "Id = ?", id[0])
+	/*if er != nil {
 		http.NotFound(w, h)
 		return
-	}
+	}*/
 	dat, err := os.ReadFile(theapp.Path + "/app.json")
   if err != nil {
 		panic(err)
