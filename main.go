@@ -43,6 +43,10 @@ func main() {
 
 func apps(w http.ResponseWriter, h *http.Request) {
 	idd := strings.Replace(h.URL.Path, "/apps/", "", 1)
+	if idd == "" {
+		http.Redirect(w, h, "../", 301)
+		return
+	}
 	id := strings.Split(idd, "/")
 	var theapp app
 	db.First(&theapp, "Id = ?", id[0])
@@ -50,10 +54,15 @@ func apps(w http.ResponseWriter, h *http.Request) {
   if err != nil {
 		panic(err)
 	}
+	public, _ := jsonparser.GetBoolean(dat, "public")
+	if !public {
+		http.NotFound(w, h)
+		return
+	}
 	id = id[1:]
 	file, e := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"))
 	if e != nil {
-		fmt.Println("Not found")
+		http.NotFound(w, h)
 	}
 	http.ServeFile(w, h, theapp.Path + "/" + file)
 }
