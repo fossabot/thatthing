@@ -1,3 +1,4 @@
 {
-  "func": "RunMe"
+  "func": "RunMe",
+  "public": true
 }
