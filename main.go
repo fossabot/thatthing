@@ -61,7 +61,7 @@ func main() {
 		fmt.Print("Insert name: ")
 		reader := bufio.NewReader(os.Stdin)
 		text, _ := reader.ReadString('\n')
-		db.Table("config").Create(&kv{"name", text})
+		db.Table("config").Create(&kv{"name", strings.TrimSpace(text)})
 	}
 
 	if check("jwtthingidk") {
@@ -125,11 +125,17 @@ func apps(w http.ResponseWriter, h *http.Request) {
 }
 
 func root(w http.ResponseWriter, h *http.Request) {
-	templ := `<!DOCTYPE HTML><html><head><link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;800;900&display=swap" rel="stylesheet"><title>Homepage</title><style>body { font-family: 'Rubik', -apple-system, sans-serif; text-align: center; padding: 2rem; } ul, h1 { margin: .3em 0; padding: 0 } h1 { font-size: 3.2em; }</style></head><body><h1>Hi.</h1><div><div>While you're here, check some of these:</div><ul>{{range .}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
+	var name kv
+	db.Table("config").First(&name, "key = ?", "name")
+	templ := `<!DOCTYPE HTML><html><head><link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;800;900&display=swap" rel="stylesheet"><title>{{.Name.Value}}'s site</title><style>body { font-family: 'Rubik', -apple-system, sans-serif; text-align: center; padding: 2rem; } ul, h1 { margin: .3em 0; padding: 0 } h1 { font-size: 3.2em; }</style></head><body><h1>Hi, I'm {{.Name.Value}}.</h1><div><div>While you're here, check some of these:</div><ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var appss []app
 	db.Find(&appss)
-	t.Execute(w, appss)
+	things := struct{
+		Apps []app
+		Name kv
+	}{ Apps: appss, Name: name }
+	t.Execute(w, things)
 }
 
 func check(name string) bool {
@@ -141,7 +147,7 @@ func check(name string) bool {
 func settings(w http.ResponseWriter, h *http.Request) {
 	cooki, err := h.Cookie("login")
 	if err != nil {
-		templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h2>Hello, {{.}}</h2><form action="settings" method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
+		templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h1>Hello, {{.}}</h1><form action="settings" method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
 		t, _ := template.New("webpage").Parse(templ)
 		var name kv
 		db.Table("config").First(&name, "key = ?", "name")
