@@ -41,14 +41,9 @@ func main() {
 	var pgs []app
 	db.Find(&pgs)
 	for _, v := range pgs {
-		if _, err := os.Stat(v.Path + "/main.go"); err == nil {
-			cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path + "/main.go")
-			cmd.Run()
-			os.Rename("main.so", v.Path + "/main.so")
-			} else if os.IsNotExist(err) {
-				fmt.Println("The app '" + v.Id + "' doesn't have a main.go file")
-			} else {}
-		}
+		cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path + "/main.go")
+		cmd.Run()
+		os.Rename("main.so", v.Path + "/main.so")
 	}
 
 	fmt.Println("Running...")
@@ -78,24 +73,14 @@ func apps(w http.ResponseWriter, h *http.Request) {
 		return
 	}
 	id = id[1:]
-	file, e := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"), "type")
-	if e != nil {
+	thatapp, _ := plugin.Open(theapp.Path + "/main.so")
+	thing, _ := jsonparser.GetString(dat, "func")
+	v, err := thatapp.Lookup(thing)
+	if err != nil {
 		http.NotFound(w, h)
 		return
 	}
-	if file == "file" {
-		thing, _ := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"), "thing")
-		http.ServeFile(w, h, theapp.Path + "/" + thing)
-	} else {
-		theapp, _ := plugin.Open(theapp.Path + "/main.so")
-		thing, _ := jsonparser.GetString(dat, "stuff", "/" + strings.Join(id, "/"), "thing")
-		v, err := theapp.Lookup(thing)
-		if err != nil {
-			http.NotFound(w, h)
-			return
-		}
-		v.(func(w http.ResponseWriter, h *http.Request))(w, h)
-	}
+	v.(func(w http.ResponseWriter, h *http.Request))(w, h)
 }
 
 func root(w http.ResponseWriter, h *http.Request) {

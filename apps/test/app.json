@@ -1,9 +1,4 @@
 {
-  "stuff": {
-    "/": {
-      "type": "func",
-      "thing": "RunMe"
-    }
-  },
+  "func": "RunMe",
   "public": true
 }
