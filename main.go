@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
 	"syscall"
+	"bufio"
 )
 
 type app struct {
@@ -42,9 +43,7 @@ func main() {
 	db.Table("apps").AutoMigrate(&app{})
 	db.Table("config").AutoMigrate(&kv{})
 
-	var g []kv
-	res := db.Table("config").Find(&g, "key = ?", "pass")
-	if res.RowsAffected == 0 {
+	if check("pass") {
 		fmt.Print("Insert a password: ")
 		pass, err := term.ReadPassword(int(syscall.Stdin))
     if err != nil {
@@ -55,10 +54,21 @@ func main() {
 		fmt.Println("")
 	}
 
+	if check("name") {
+		fmt.Print("Insert name: ")
+		reader := bufio.NewReader(os.Stdin)
+		text, _ := reader.ReadString('\n')
+		fmt.Println(text)
+	}
+
 	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test", Public: true})
 
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
+	http.HandleFunc("/settings/", settings)
+	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "style.css")
+	})
 
 	fmt.Println("Building apps...")
 	var pgs []app
@@ -112,4 +122,14 @@ func root(w http.ResponseWriter, h *http.Request) {
 	var appss []app
 	db.Find(&appss)
 	t.Execute(w, appss)
+}
+
+func check(name string) bool {
+	var g []kv
+	res := db.Table("config").Find(&g, "key = ?", name)
+	return res.RowsAffected == 0
+}
+
+func settings(w http.ResponseWriter, h *http.Request) {
+
 }
