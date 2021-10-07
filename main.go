@@ -12,6 +12,9 @@ import (
 	"html/template"
 	"os/exec"
 	"plugin"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/term"
+	"syscall"
 )
 
 type app struct {
@@ -19,6 +22,11 @@ type app struct {
 	Path  string
 	Public bool
 	Id string `gorm:"primaryKey"`
+}
+
+type kv struct {
+	Key string `gorm:"primaryKey"`
+	Value string
 }
 
 var db *gorm.DB
@@ -32,6 +40,20 @@ func main() {
 	}
 
 	db.Table("apps").AutoMigrate(&app{})
+	db.Table("config").AutoMigrate(&kv{})
+
+	var g []kv
+	res := db.Table("config").Find(&g, "key = ?", "pass")
+	if res.RowsAffected == 0 {
+		fmt.Print("Insert a password: ")
+		pass, err := term.ReadPassword(int(syscall.Stdin))
+    if err != nil {
+      panic(err)
+    }
+		passss, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+		db.Table("config").Create(&kv{"pass", string(passss)})
+		fmt.Println("")
+	}
 
 	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test", Public: true})
 

@@ -1,3 +1,3 @@
 run:
 	rm -rf /apps/*/main.so
-	go run .
+	go run main.go
