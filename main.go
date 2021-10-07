@@ -16,6 +16,9 @@ import (
 	"golang.org/x/term"
 	"syscall"
 	"bufio"
+	//"github.com/golang-jwt/jwt/v4"
+	"crypto/rand"
+	"math/big"
 )
 
 type app struct {
@@ -46,9 +49,9 @@ func main() {
 	if check("pass") {
 		fmt.Print("Insert a password: ")
 		pass, err := term.ReadPassword(int(syscall.Stdin))
-    if err != nil {
-      panic(err)
-    }
+		if err != nil {
+			panic(err)
+		}
 		passss, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 		db.Table("config").Create(&kv{"pass", string(passss)})
 		fmt.Println("")
@@ -58,7 +61,12 @@ func main() {
 		fmt.Print("Insert name: ")
 		reader := bufio.NewReader(os.Stdin)
 		text, _ := reader.ReadString('\n')
-		fmt.Println(text)
+		db.Table("config").Create(&kv{"name", text})
+	}
+
+	if check("jwtthingidk") {
+		s, _ := rand.Int(rand.Reader, big.NewInt(int64(999999999999999)))
+		db.Table("config").Create(&kv{"jwtthingidk", s.String()})
 	}
 
 	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test", Public: true})
@@ -131,5 +139,24 @@ func check(name string) bool {
 }
 
 func settings(w http.ResponseWriter, h *http.Request) {
-
+	cooki, err := h.Cookie("login")
+	if err != nil {
+		templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h2>Hello, {{.}}</h2><form action="settings" method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
+		t, _ := template.New("webpage").Parse(templ)
+		var name kv
+		db.Table("config").First(&name, "key = ?", "name")
+		t.Execute(w, name.Value)
+		return
+	}
+	cookie := cooki.Value
+	var jwtth kv
+	db.Table("config").First(&jwtth, "key = ?", "jwtthingidk")
+	fmt.Println(cookie)
+	/*token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(jwtth.Value), nil
+	})
+	fmt.Println(token)*/
 }
