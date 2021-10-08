@@ -167,6 +167,8 @@ func CheckLogin(h *http.Request) bool {
 		return []byte(jwtth.Value), nil
 	});
 
+	if err != nil { return false }
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		aft, _ := claims["now"].(int64)
 		if time.Unix(aft, 0).After(time.Now()) {
@@ -218,7 +220,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 		if CheckLogin(h) {
 			fmt.Fprintf(w, "You logged in successfully.")
 		} else {
-			http.SetCookie(w, &http.Cookie{ Name: "login", Value: "", Expires: time.Unix(0, 0) })
+			http.SetCookie(w, &http.Cookie{ Name: "login", Value: "", MaxAge: -1 })
 			http.Redirect(w, h, ".", 303)
 		}
 	}
