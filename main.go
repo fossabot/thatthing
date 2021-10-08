@@ -70,11 +70,17 @@ func main() {
 		db.Table("config").Create(&kv{"jwtthingidk", s.String()})
 	}
 
+	db.Table("config").Create(&kv{"desc", ""})
+
 	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test", Public: true})
 
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
 	http.HandleFunc("/settings/", settings)
+	http.HandleFunc("/settings/logout/", func(w http.ResponseWriter, h *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "login", Value: "", MaxAge: -1, Path: "/"})
+		http.Redirect(w, h, "/", 303)
+	})
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "style.css")
 	})
@@ -126,9 +132,13 @@ func apps(w http.ResponseWriter, h *http.Request) {
 }
 
 func root(w http.ResponseWriter, h *http.Request) {
-	var name kv
-	db.Table("config").First(&name, "key = ?", "name")
-	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Name.Value}}'s site</title></head><body><div class="a"><h1>Hi, I'm {{.Name.Value}}.</h1></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
+	d := make(map[string]string)
+	var thingss []kv
+	db.Table("config").Find(&thingss)
+	for _, v := range thingss {
+		d[v.Key] = v.Value
+	}
+	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title></head><body><div class="a"><h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var appss []app
 	db.Find(&appss)
@@ -144,8 +154,8 @@ func root(w http.ResponseWriter, h *http.Request) {
 	}
 	things := struct {
 		Apps []app
-		Name kv
-	}{Apps: filtered, Name: name}
+		Data map[string]string
+	}{Apps: filtered, Data: d}
 	t.Execute(w, things)
 }
 
@@ -211,7 +221,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 					t.Execute(w, name.Value)
 					return
 				}
-				http.SetCookie(w, &http.Cookie{Name: "login", Value: realtoken, Expires: time.Now().Add(dur)})
+				http.SetCookie(w, &http.Cookie{Name: "login", Value: realtoken, Expires: time.Now().Add(dur), Path: "/"})
 				http.Redirect(w, h, ".", 303)
 			} else {
 				t.Execute(w, name.Value)
@@ -236,12 +246,12 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				for _, v := range things {
 					d[v.Key] = v.Value
 				}
-				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><div><input type="submit" value="Done"></div></form></body></html>`
+				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><div><input type="submit" value="Done"></div></form><div><a href="logout"><button style="margin: 1em">Log out</button></a></div></body></html>`
 				p, _ := template.New("webpage").Parse(page)
 				p.Execute(w, d)
 			}
 		} else {
-			http.SetCookie(w, &http.Cookie{Name: "login", Value: "", MaxAge: -1})
+			http.SetCookie(w, &http.Cookie{Name: "login", Value: "", MaxAge: -1, Path: "/"})
 			http.Redirect(w, h, ".", 303)
 		}
 	}
