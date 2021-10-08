@@ -1,36 +1,36 @@
 package main
 
 import (
+	"bufio"
+	"crypto/rand"
 	"fmt"
-	"log"
-	"net/http"
-	"strings"
-	"gorm.io/gorm"
-	"os"
-	"gorm.io/driver/sqlite"
 	"github.com/buger/jsonparser"
-	"html/template"
-	"os/exec"
-	"plugin"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
-	"syscall"
-	"bufio"
-	"github.com/golang-jwt/jwt/v4"
-	"crypto/rand"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"html/template"
+	"log"
 	"math/big"
+	"net/http"
+	"os"
+	"os/exec"
+	"plugin"
+	"strings"
+	"syscall"
 	"time"
 )
 
 type app struct {
-	Name  string
-	Path  string
+	Name   string
+	Path   string
 	Public bool
-	Id string `gorm:"primaryKey"`
+	Id     string `gorm:"primaryKey"`
 }
 
 type kv struct {
-	Key string `gorm:"primaryKey"`
+	Key   string `gorm:"primaryKey"`
 	Value string
 }
 
@@ -83,9 +83,9 @@ func main() {
 	var pgs []app
 	db.Find(&pgs)
 	for _, v := range pgs {
-		cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path + "/main.go")
+		cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path+"/main.go")
 		cmd.Run()
-		os.Rename("main.so", v.Path + "/main.so")
+		os.Rename("main.so", v.Path+"/main.so")
 	}
 
 	fmt.Println("Running...")
@@ -142,10 +142,10 @@ func root(w http.ResponseWriter, h *http.Request) {
 			filtered = append(filtered, v)
 		}
 	}
-	things := struct{
+	things := struct {
 		Apps []app
 		Name kv
-	}{ Apps: filtered, Name: name }
+	}{Apps: filtered, Name: name}
 	t.Execute(w, things)
 }
 
@@ -165,9 +165,11 @@ func CheckLogin(h *http.Request) bool {
 		}
 
 		return []byte(jwtth.Value), nil
-	});
+	})
 
-	if err != nil { return false }
+	if err != nil {
+		return false
+	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		aft, _ := claims["now"].(int64)
@@ -190,7 +192,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 	var jwtth kv
 	db.Table("config").First(&jwtth, "key = ?", "jwtthingidk")
 	if err != nil {
-			if h.Method == "GET" {
+		if h.Method == "GET" {
 			t.Execute(w, name.Value)
 		} else if h.Method == "POST" {
 			h.ParseForm()
@@ -201,7 +203,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				dur, _ := time.ParseDuration("168h")
 				token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 					"login": true,
-					"now": time.Now().Add(dur).Unix() })
+					"now":   time.Now().Add(dur).Unix()})
 				realtoken, err := token.SignedString([]byte(jwtth.Value))
 				if err != nil {
 					fmt.Println("Failed to login")
@@ -209,7 +211,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 					t.Execute(w, name.Value)
 					return
 				}
-				http.SetCookie(w, &http.Cookie{ Name: "login", Value: realtoken, Expires: time.Now().Add(dur) })
+				http.SetCookie(w, &http.Cookie{Name: "login", Value: realtoken, Expires: time.Now().Add(dur)})
 				http.Redirect(w, h, ".", 303)
 			} else {
 				t.Execute(w, name.Value)
@@ -218,9 +220,28 @@ func settings(w http.ResponseWriter, h *http.Request) {
 		return
 	} else {
 		if CheckLogin(h) {
-			fmt.Fprintf(w, "You logged in successfully.")
+			if h.Method == "POST" {
+				h.ParseForm()
+				for k, v := range h.Form {
+					var upd kv
+					db.Table("config").First(&upd, "key = ?", k)
+					upd.Value = v[0]
+					db.Table("config").Save(&upd)
+				}
+				http.Redirect(w, h, ".", 303)
+			} else {
+				d := make(map[string]string)
+				var things []kv
+				db.Table("config").Find(&things)
+				for _, v := range things {
+					d[v.Key] = v.Value
+				}
+				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><div><input type="submit" value="Done"></div></form></body></html>`
+				p, _ := template.New("webpage").Parse(page)
+				p.Execute(w, d)
+			}
 		} else {
-			http.SetCookie(w, &http.Cookie{ Name: "login", Value: "", MaxAge: -1 })
+			http.SetCookie(w, &http.Cookie{Name: "login", Value: "", MaxAge: -1})
 			http.Redirect(w, h, ".", 303)
 		}
 	}
