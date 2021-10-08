@@ -16,9 +16,20 @@ input {
   margin: 1em;
 }
 
-form {
+form, .a {
   border: solid 4px #000;
   padding: 1em;
   border-radius: 6px;
   display: inline-block;
+  max-width: 480px;
+}
+
+.a {
+  margin: .7em auto;
+  display: block;
+}
+
+ul {
+  padding: 0;
+  margin: .3em
 }

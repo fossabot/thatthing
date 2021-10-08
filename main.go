@@ -128,7 +128,7 @@ func apps(w http.ResponseWriter, h *http.Request) {
 func root(w http.ResponseWriter, h *http.Request) {
 	var name kv
 	db.Table("config").First(&name, "key = ?", "name")
-	templ := `<!DOCTYPE HTML><html><head><link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;800;900&display=swap" rel="stylesheet"><title>{{.Name.Value}}'s site</title><style>body { font-family: 'Rubik', -apple-system, sans-serif; text-align: center; padding: 2rem; } ul, h1 { margin: .3em 0; padding: 0 } h1 { font-size: 3.2em; }</style></head><body><h1>Hi, I'm {{.Name.Value}}.</h1><div>{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Name.Value}}'s site</title></head><body><div class="a"><h1>Hi, I'm {{.Name.Value}}.</h1></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var appss []app
 	db.Find(&appss)
