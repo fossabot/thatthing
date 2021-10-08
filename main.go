@@ -155,6 +155,30 @@ func check(name string) bool {
 	return res.RowsAffected == 0
 }
 
+func CheckLogin(h *http.Request) bool {
+	var jwtth kv
+	db.Table("config").First(&jwtth, "key = ?", "jwtthingidk")
+	cook, _ := h.Cookie("login")
+	token, err := jwt.Parse(cook.Value, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return []byte(jwtth.Value), nil
+	});
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		aft, _ := claims["now"].(int64)
+		if time.Unix(aft, 0).After(time.Now()) {
+			return false
+		}
+		return claims["login"].(bool)
+	} else {
+		fmt.Println(err)
+		return false
+	}
+}
+
 func settings(w http.ResponseWriter, h *http.Request) {
 	_, err := h.Cookie("login")
 	templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h1>Hello, {{.}}</h1><form action="." method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
@@ -184,10 +208,18 @@ func settings(w http.ResponseWriter, h *http.Request) {
 					return
 				}
 				http.SetCookie(w, &http.Cookie{ Name: "login", Value: realtoken, Expires: time.Now().Add(dur) })
+				http.Redirect(w, h, ".", 303)
 			} else {
 				t.Execute(w, name.Value)
 			}
 		}
 		return
+	} else {
+		if CheckLogin(h) {
+			fmt.Fprintf(w, "You logged in successfully.")
+		} else {
+			http.SetCookie(w, &http.Cookie{ Name: "login", Value: "", Expires: time.Unix(0, 0) })
+			http.Redirect(w, h, ".", 303)
+		}
 	}
 }
