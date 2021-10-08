@@ -16,9 +16,10 @@ import (
 	"golang.org/x/term"
 	"syscall"
 	"bufio"
-	//"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v4"
 	"crypto/rand"
 	"math/big"
+	"time"
 )
 
 type app struct {
@@ -52,7 +53,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		passss, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+		passss, _ := bcrypt.GenerateFromPassword(pass, bcrypt.DefaultCost)
 		db.Table("config").Create(&kv{"pass", string(passss)})
 		fmt.Println("")
 	}
@@ -65,7 +66,7 @@ func main() {
 	}
 
 	if check("jwtthingidk") {
-		s, _ := rand.Int(rand.Reader, big.NewInt(int64(999999999999999)))
+		s, _ := rand.Int(rand.Reader, big.NewInt(int64(999999999999999999)))
 		db.Table("config").Create(&kv{"jwtthingidk", s.String()})
 	}
 
@@ -155,24 +156,38 @@ func check(name string) bool {
 }
 
 func settings(w http.ResponseWriter, h *http.Request) {
-	cooki, err := h.Cookie("login")
-	if err != nil {
-		templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h1>Hello, {{.}}</h1><form action="settings" method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
-		t, _ := template.New("webpage").Parse(templ)
-		var name kv
-		db.Table("config").First(&name, "key = ?", "name")
-		t.Execute(w, name.Value)
-		return
-	}
-	cookie := cooki.Value
+	_, err := h.Cookie("login")
+	templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h1>Hello, {{.}}</h1><form action="." method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
+	t, _ := template.New("webpage").Parse(templ)
+	var name kv
+	db.Table("config").First(&name, "key = ?", "name")
 	var jwtth kv
 	db.Table("config").First(&jwtth, "key = ?", "jwtthingidk")
-	fmt.Println(cookie)
-	/*token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+	if err != nil {
+			if h.Method == "GET" {
+			t.Execute(w, name.Value)
+		} else if h.Method == "POST" {
+			h.ParseForm()
+			var thepass kv
+			db.Table("config").First(&thepass, "key = ?", "pass")
+			pass := bcrypt.CompareHashAndPassword([]byte(thepass.Value), []byte(h.Form["pass"][0]))
+			if pass == nil {
+				dur, _ := time.ParseDuration("168h")
+				token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+					"login": true,
+					"now": time.Now().Add(dur).Unix() })
+				realtoken, err := token.SignedString([]byte(jwtth.Value))
+				if err != nil {
+					fmt.Println("Failed to login")
+					fmt.Println(err)
+					t.Execute(w, name.Value)
+					return
+				}
+				http.SetCookie(w, &http.Cookie{ Name: "login", Value: realtoken, Expires: time.Now().Add(dur) })
+			} else {
+				t.Execute(w, name.Value)
+			}
 		}
-		return []byte(jwtth.Value), nil
-	})
-	fmt.Println(token)*/
+		return
+	}
 }
