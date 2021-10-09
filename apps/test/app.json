@@ -1,4 +1,5 @@
 {
   "func": "RunMe",
-  "public": true
+  "public": true,
+  "conf": "RunMe"
 }

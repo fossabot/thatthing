@@ -85,6 +85,7 @@ func main() {
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "style.css")
 	})
+	http.HandleFunc("/settings/apps/", appconf)
 
 	fmt.Println("Building apps...")
 	var pgs []app
@@ -97,6 +98,33 @@ func main() {
 
 	fmt.Println("Running...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func appconf(w http.ResponseWriter, h *http.Request) {
+	if !CheckLogin(h) {
+		http.Redirect(w, h, "/settings", 303)
+		return
+	}
+	if h.URL.Path == "/settings/apps/" {
+		http.Redirect(w, h, "/settings", 303)
+		return
+	}
+	ap := strings.Replace(h.URL.Path, "/settings/apps/", "", 1)
+	id := strings.Split(ap, "/")
+	var theapp app
+	db.First(&theapp, "Id = ?", id[0])
+	data, err := os.ReadFile(theapp.Path + "/app.json")
+	if err != nil {
+		panic(err)
+	}
+	thatapp, _ := plugin.Open(theapp.Path + "/main.so")
+	thing, _ := jsonparser.GetString(data, "func")
+	v, err := thatapp.Lookup(thing)
+	if err != nil {
+		http.NotFound(w, h)
+		return
+	}
+	v.(func(w http.ResponseWriter, h *http.Request))(w, h)
 }
 
 func apps(w http.ResponseWriter, h *http.Request) {
