@@ -118,8 +118,10 @@ func apps(w http.ResponseWriter, h *http.Request) {
 	}
 	public, _ := jsonparser.GetBoolean(dat, "public")
 	if !public {
-		http.NotFound(w, h)
-		return
+		if !CheckLogin(h) {
+			http.NotFound(w, h)
+			return
+		}
 	}
 	id = id[1:]
 	thatapp, _ := plugin.Open(theapp.Path + "/main.so")
@@ -169,7 +171,10 @@ func check(name string) bool {
 func CheckLogin(h *http.Request) bool {
 	var jwtth kv
 	db.Table("config").First(&jwtth, "key = ?", "jwtthingidk")
-	cook, _ := h.Cookie("login")
+	cook, er := h.Cookie("login")
+	if er != nil {
+		return false
+	}
 	token, err := jwt.Parse(cook.Value, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
