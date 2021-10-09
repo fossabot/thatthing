@@ -13,7 +13,7 @@ input {
   outline: none;
   border: solid 2px #000;
   display: inline-block;
-  margin: 1em;
+  margin-bottom: 1em;
 }
 
 form, .a {
@@ -33,4 +33,21 @@ form, .a {
 ul {
   padding: 0;
   margin: .3em
+}
+
+label {
+  display: block;
+  margin-top: 1em;
+}
+
+textarea {
+  resize: vertical;
+  margin-bottom: .5em;
+}
+
+.pfp {
+  display: inline-block;
+  width: 4em;
+  height: 4em;
+  border-radius: 6px;
 }

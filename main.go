@@ -71,6 +71,7 @@ func main() {
 	}
 
 	db.Table("config").Create(&kv{"desc", ""})
+	db.Table("config").Create(&kv{"img", ""})
 
 	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test", Public: true})
 
@@ -79,7 +80,7 @@ func main() {
 	http.HandleFunc("/settings/", settings)
 	http.HandleFunc("/settings/logout/", func(w http.ResponseWriter, h *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: "login", Value: "", MaxAge: -1, Path: "/"})
-		http.Redirect(w, h, "/", 303)
+		http.Redirect(w, h, "/settings", 303)
 	})
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "style.css")
@@ -138,7 +139,7 @@ func root(w http.ResponseWriter, h *http.Request) {
 	for _, v := range thingss {
 		d[v.Key] = v.Value
 	}
-	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title></head><body><div class="a"><h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title></head><body><div class="a">{{if gt (len .Data.img) 0}}<div><img src="{{.Data.img}}" class="pfp"></div>{{end}}<h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var appss []app
 	db.Find(&appss)
@@ -195,15 +196,18 @@ func CheckLogin(h *http.Request) bool {
 
 func settings(w http.ResponseWriter, h *http.Request) {
 	_, err := h.Cookie("login")
-	templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body><h1>Hello, {{.}}</h1><form action="." method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body>{{if gt (len .img.Value) 0}}<div><img src="{{.img.Value}}" class="pfp"></div>{{end}}<h1>Welcome back, {{.name.Value}}</h1><form action="." method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var name kv
 	db.Table("config").First(&name, "key = ?", "name")
+	var img kv
+	db.Table("config").First(&img, "key = ?", "img")
+	d := map[string]kv{"name": name, "img": img}
 	var jwtth kv
 	db.Table("config").First(&jwtth, "key = ?", "jwtthingidk")
 	if err != nil {
 		if h.Method == "GET" {
-			t.Execute(w, name.Value)
+			t.Execute(w, d)
 		} else if h.Method == "POST" {
 			h.ParseForm()
 			var thepass kv
@@ -218,13 +222,13 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				if err != nil {
 					fmt.Println("Failed to login")
 					fmt.Println(err)
-					t.Execute(w, name.Value)
+					t.Execute(w, d)
 					return
 				}
 				http.SetCookie(w, &http.Cookie{Name: "login", Value: realtoken, Expires: time.Now().Add(dur), Path: "/"})
 				http.Redirect(w, h, ".", 303)
 			} else {
-				t.Execute(w, name.Value)
+				t.Execute(w, d)
 			}
 		}
 		return
@@ -246,7 +250,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				for _, v := range things {
 					d[v.Key] = v.Value
 				}
-				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><div><input type="submit" value="Done"></div></form><div><a href="logout"><button style="margin: 1em">Log out</button></a></div></body></html>`
+				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div><a href="logout"><button style="margin: 1em">Log out</button></a></div></body></html>`
 				p, _ := template.New("webpage").Parse(page)
 				p.Execute(w, d)
 			}
