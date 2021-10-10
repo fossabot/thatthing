@@ -73,7 +73,7 @@ func main() {
 	db.Table("config").Create(&kv{"desc", ""})
 	db.Table("config").Create(&kv{"img", ""})
 
-	db.Create(&app{Name: "Test", Path: "apps/test", Id: "test", Public: true})
+	db.Create(&app{Name: "Blog", Path: "apps/blog", Id: "blog", Public: true})
 
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
@@ -90,10 +90,16 @@ func main() {
 	fmt.Println("Building apps...")
 	var pgs []app
 	db.Find(&pgs)
+	exec.Command("go", "mod", "tidy").Run()
 	for _, v := range pgs {
 		cmd := exec.Command("go", "build", "-buildmode=plugin", v.Path+"/main.go")
 		cmd.Run()
 		os.Rename("main.so", v.Path+"/main.so")
+		thatapp, _ := plugin.Open(v.Path + "/main.so")
+		ve, err := thatapp.Lookup("Main")
+		if err == nil {
+			ve.(func())()
+		}
 	}
 
 	fmt.Println("Running...")
@@ -117,10 +123,12 @@ func appconf(w http.ResponseWriter, h *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	id = id[1:]
 	thatapp, _ := plugin.Open(theapp.Path + "/main.so")
-	thing, _ := jsonparser.GetString(data, "func")
+	thing, _ := jsonparser.GetString(data, "conf", "/" + strings.Join(id, "/"))
 	v, err := thatapp.Lookup(thing)
 	if err != nil {
+		fmt.Println(err)
 		http.NotFound(w, h)
 		return
 	}
@@ -153,9 +161,22 @@ func apps(w http.ResponseWriter, h *http.Request) {
 	}
 	id = id[1:]
 	thatapp, _ := plugin.Open(theapp.Path + "/main.so")
-	thing, _ := jsonparser.GetString(dat, "func")
+	found := false
+	var thing string
+	jsonparser.ObjectEach(dat, func(k []byte, v []byte, dataType jsonparser.ValueType, o int) error {
+		if !found {
+			if strings.HasPrefix("/" + strings.Join(id, "/"), string(k)) {
+				found = true
+				thing = string(v)
+			}
+		}
+
+		return nil
+	}, "func")
+
 	v, err := thatapp.Lookup(thing)
 	if err != nil {
+		fmt.Println(err)
 		http.NotFound(w, h)
 		return
 	}

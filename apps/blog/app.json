@@ -1,0 +1,11 @@
+{
+  "func": {
+    "/blogs": "See",
+    "/": "RunMe"
+  },
+  "public": true,
+  "conf": {
+    "/": "Setting",
+    "/new": "Nwblg"
+  }
+}
