@@ -211,14 +211,18 @@ func root(w http.ResponseWriter, h *http.Request) {
 	var appss []app
 	db.Find(&appss)
 	var filtered []app
-	for _, v := range appss {
-		thedata, err := os.ReadFile(v.Path + "/app.json")
-		if err != nil {
-			panic(err)
+	if !CheckLogin(h) {
+		for _, v := range appss {
+			thedata, err := os.ReadFile(v.Path + "/app.json")
+			if err != nil {
+				panic(err)
+			}
+			if thing, _ := jsonparser.GetBoolean(thedata, "public"); thing {
+				filtered = append(filtered, v)
+			}
 		}
-		if thing, _ := jsonparser.GetBoolean(thedata, "public"); thing {
-			filtered = append(filtered, v)
-		}
+	} else {
+		filtered = appss
 	}
 	things := struct {
 		Apps []app
