@@ -40,7 +40,11 @@ func RunMe(w http.ResponseWriter, h *http.Request) {
 
 func See(w http.ResponseWriter, h *http.Request) {
 	var t blog
-	db.First(&t, "id = ?", path.Base(h.URL.Path))
+	e := db.First(&t, "id = ?", path.Base(h.URL.Path))
+	if e.Error != nil {
+		http.NotFound(w, h)
+		return
+	}
 	templ := `<!DOCTYPE HTML><html><head><title>{{.Title}} - Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>{{.Title}}</h1><div class="a" style="text-align: left">{{.Cont}}</div></body></html>`
 	templ = strings.Replace(templ, "{{.Cont}}", t.Cont, 1)
 	te, _ := template.New("webpage").Parse(templ)
