@@ -58,7 +58,7 @@ func See(w http.ResponseWriter, h *http.Request) {
 func Setting(w http.ResponseWriter, h *http.Request) {
 	var k []blog
 	db.Find(&k)
-	templ := `<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><a href="/settings/apps/blog/new"><button>New</button></a><hr /><ul>{{range .}}<li>{{.Title}} ({{.Id}}) − <a href="/settings/apps/blog/del/{{.Id}}">Delete</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><a href="/settings/apps/blog/new"><button>New</button></a><hr /><ul>{{range .}}<li><a href="/apps/blog/blogs/{{.Id}}">{{.Title}} ({{.Id}})</a> − <a href="/settings/apps/blog/del/{{.Id}}">Delete</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	t.Execute(w, k)
 }
@@ -66,14 +66,15 @@ func Setting(w http.ResponseWriter, h *http.Request) {
 func Nwblg(w http.ResponseWriter, h *http.Request) {
 	if h.Method == "POST" {
 		h.ParseForm()
-		time := time.Now().Unix()
+		timee := time.Now().Unix()
+		rand.Seed(time.Now().UnixNano())
 		id := fmt.Sprint(rand.Intn(999999999999999))
 		ns := blackfriday.MarkdownCommon([]byte(h.Form["content"][0]))
 		cont := bluemonday.UGCPolicy().SanitizeBytes(ns)
 		db.Create(&blog{
 			Title: h.Form["title"][0],
 			Cont:  string(cont),
-			Publ:  fmt.Sprint(time),
+			Publ:  fmt.Sprint(timee),
 			Id:    id,
 		})
 		http.Redirect(w, h, ".", 303)
