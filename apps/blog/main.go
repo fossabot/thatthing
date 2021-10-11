@@ -12,6 +12,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"strconv"
 )
 
 type blog struct {
@@ -45,7 +46,10 @@ func See(w http.ResponseWriter, h *http.Request) {
 		http.NotFound(w, h)
 		return
 	}
-	templ := `<!DOCTYPE HTML><html><head><title>{{.Title}} - Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>{{.Title}}</h1><div class="a" style="text-align: left">{{.Cont}}</div></body></html>`
+	i, _ := strconv.ParseInt(t.Publ, 10, 64)
+	tim := time.Unix(i, 0).Local().Format(time.UnixDate)
+	t.Publ = tim
+	templ := `<!DOCTYPE HTML><html><head><title>{{.Title}} - Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>{{.Title}}</h1><div>{{.Publ}}</div><div class="a" style="text-align: left">{{.Cont}}</div></body></html>`
 	templ = strings.Replace(templ, "{{.Cont}}", t.Cont, 1)
 	te, _ := template.New("webpage").Parse(templ)
 	te.Execute(w, t)
@@ -62,14 +66,14 @@ func Setting(w http.ResponseWriter, h *http.Request) {
 func Nwblg(w http.ResponseWriter, h *http.Request) {
 	if h.Method == "POST" {
 		h.ParseForm()
-		time := time.Now().String()
+		time := time.Now().Unix()
 		id := fmt.Sprint(rand.Intn(999999999999999))
 		ns := blackfriday.MarkdownCommon([]byte(h.Form["content"][0]))
 		cont := bluemonday.UGCPolicy().SanitizeBytes(ns)
 		db.Create(&blog{
 			Title: h.Form["title"][0],
 			Cont:  string(cont),
-			Publ:  time,
+			Publ:  fmt.Sprint(time),
 			Id:    id,
 		})
 		http.Redirect(w, h, ".", 303)
