@@ -54,7 +54,7 @@ func See(w http.ResponseWriter, h *http.Request) {
 func Setting(w http.ResponseWriter, h *http.Request) {
 	var k []blog
 	db.Find(&k)
-	templ := `<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><a href="/settings/apps/blog/new"><button>New</button></a><hr /><ul>{{range .}}<li>{{.Title}} ({{.Id}})</li>{{else}}No blogs{{end}}</ul></div></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><a href="/settings/apps/blog/new"><button>New</button></a><hr /><ul>{{range .}}<li>{{.Title}} ({{.Id}}) − <a href="/settings/apps/blog/del/{{.Id}}">Delete</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	t.Execute(w, k)
 }
@@ -76,4 +76,15 @@ func Nwblg(w http.ResponseWriter, h *http.Request) {
 	} else {
 		http.ServeFile(w, h, "apps/blog/new.html")
 	}
+}
+
+func Del(w http.ResponseWriter, h *http.Request) {
+	var blg blog
+	e := db.First(&blg, "Id = ?", path.Base(h.URL.Path))
+	if e.Error != nil {
+		fmt.Fprintf(w, "Failed")
+		return
+	}
+	db.Delete(&blog{}, "Id = ?", path.Base(h.URL.Path))
+	http.Redirect(w, h, "..", 303)
 }

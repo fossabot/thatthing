@@ -130,7 +130,18 @@ func appconf(w http.ResponseWriter, h *http.Request) {
 	}
 	id = id[1:]
 	thatapp, _ := plugin.Open(theapp.Path + "/main.so")
-	thing, _ := jsonparser.GetString(data, "conf", "/" + strings.Join(id, "/"))
+	found := false
+	var thing string
+	jsonparser.ObjectEach(data, func(k []byte, v []byte, dataType jsonparser.ValueType, o int) error {
+		if !found {
+			if strings.HasPrefix("/" + strings.Join(id, "/"), string(k)) {
+				found = true
+				thing = string(v)
+			}
+		}
+
+		return nil
+	}, "conf")
 	v, err := thatapp.Lookup(thing)
 	if err != nil {
 		fmt.Println(err)
