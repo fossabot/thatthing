@@ -56,3 +56,18 @@ a {
   font-weight: 600;
   color: #000;
 }
+
+.install, .install td {
+  border: solid 1px #000;
+  border-collapse: collapse;
+  display: inline-block;
+}
+
+.install td {
+  padding: 5px;
+}
+
+.install input {
+  margin: 0 !important;
+  border: none;
+}

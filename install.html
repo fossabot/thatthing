@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Install an app</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <h1>Install an app</h1>
+    <form action="." method="POST">
+      <label for="name">Name</label>
+      <input type="text" required maxlength="40" id="name" name="name">
+      <label for="id">ID (alphanumeric)</label>
+      <input type="text" required maxlength="30" id="id" name="id" pattern="^[a-zA-Z0-9]*$">
+      <label for="path">Path</label>
+      <table class="install"><tr><td>{{.}}</td><td><input type="text" required id="path" name="path"></td></tr></table>
+      <div><i>Once installed, you cannot change any of this. Unless you edit the db file. Or you reinstall it.</i></div>
+      <div><input type="submit" value="Install"></div>
+    </form>
+  </body>
+</html>

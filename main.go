@@ -14,10 +14,12 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"path/filepath"
 	"os"
 	"os/exec"
 	"path"
 	"plugin"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -87,6 +89,7 @@ func main() {
 		http.ServeFile(w, r, "style.css")
 	})
 	http.HandleFunc("/settings/uninstall/", uninst)
+	http.HandleFunc("/settings/install/", instal)
 	http.HandleFunc("/settings/apps/", appconf)
 
 	fmt.Println("Building apps...")
@@ -108,6 +111,52 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func instal(w http.ResponseWriter, h *http.Request) {
+	if !CheckLogin(h) {
+		http.Redirect(w, h, "/settings", 303)
+		return
+	}
+	if h.Method == "POST" {
+		rgx := regexp.MustCompile("^[a-zA-Z0-9]*$")
+		h.ParseForm()
+		pth := h.Form["path"][0]
+		var find app
+		e := db.First(&find, "Id = ?", h.Form["id"][0])
+		if e.Error == nil {
+			fmt.Fprintf(w, "Failed, app is already installed")
+			return
+		}
+		if !rgx.MatchString(h.Form["id"][0]) {
+			fmt.Fprintf(w, "Failed, ID must be alphanumeric")
+			return
+		}
+		if !testread(pth + "/app.json") {
+			fmt.Fprintf(w, "Failed, app.json does not exist")
+			return
+		}
+		if !testread(pth + "/main.go") {
+			fmt.Fprintf(w, "Failed, main.go does not exist")
+			return
+		}
+		db.Create(&app{
+			Name: h.Form["name"][0],
+			Path: h.Form["path"][0],
+			Public: true,
+			Id: h.Form["id"][0],
+		})
+		http.Redirect(w, h, "/settings/apps", 303)
+	} else {
+		pth, _ := filepath.Abs("./")
+		templ, _ := template.ParseFiles("install.html")
+		templ.ExecuteTemplate(w, "install.html", pth + "/")
+	}
+}
+
+func testread(path string) bool {
+	_, err := os.ReadFile(path)
+	return err == nil
+}
+
 func appconf(w http.ResponseWriter, h *http.Request) {
 	if !CheckLogin(h) {
 		http.Redirect(w, h, "/settings", 303)
@@ -116,10 +165,9 @@ func appconf(w http.ResponseWriter, h *http.Request) {
 	if h.URL.Path == "/settings/apps/" {
 		var ap []app
 		db.Find(&ap)
-		templ := `<!DOCTYPE HTML><html><head><title>Apps</title><link rel="stylesheet" href="/style.css"></head><body><h1>Apps</h1><div class="a"><ul>{{range .}}<li><a href="/settings/apps/{{.Id}}">{{.Name}}</a> − <a href="/settings/uninstall/{{.Id}}">Uninstall</a></li>{{else}}No apps.{{end}}</ul></div></body></html>`
+		templ := `<!DOCTYPE HTML><html><head><title>Apps</title><link rel="stylesheet" href="/style.css"></head><body><h1>Apps</h1><div class="a"><a href="/settings/install"><button>Install</button></a><hr /><ul>{{range .}}<li><a href="/settings/apps/{{.Id}}">{{.Name}}</a> − <a href="/settings/uninstall/{{.Id}}">Uninstall</a></li>{{else}}No apps.{{end}}</ul></div></body></html>`
 		v, _ := template.New("webpage").Parse(templ)
 		v.Execute(w, ap)
-		// add uninstall thing?
 		return
 	}
 	ap := strings.Replace(h.URL.Path, "/settings/apps/", "", 1)
