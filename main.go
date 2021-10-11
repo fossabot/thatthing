@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"plugin"
 	"strings"
 	"syscall"
@@ -85,6 +86,7 @@ func main() {
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "style.css")
 	})
+	http.HandleFunc("/settings/uninstall/", uninst)
 	http.HandleFunc("/settings/apps/", appconf)
 
 	fmt.Println("Building apps...")
@@ -114,7 +116,7 @@ func appconf(w http.ResponseWriter, h *http.Request) {
 	if h.URL.Path == "/settings/apps/" {
 		var ap []app
 		db.Find(&ap)
-		templ := `<!DOCTYPE HTML><html><head><title>Apps</title><link rel="stylesheet" href="/style.css"></head><body><h1>Apps</h1><div class="a"><ul>{{range .}}<li><a href="/settings/apps/{{.Id}}">{{.Name}}</a></li>{{else}}No apps.{{end}}</ul></div></body></html>`
+		templ := `<!DOCTYPE HTML><html><head><title>Apps</title><link rel="stylesheet" href="/style.css"></head><body><h1>Apps</h1><div class="a"><ul>{{range .}}<li><a href="/settings/apps/{{.Id}}">{{.Name}}</a> − <a href="/settings/uninstall/{{.Id}}">Uninstall</a></li>{{else}}No apps.{{end}}</ul></div></body></html>`
 		v, _ := template.New("webpage").Parse(templ)
 		v.Execute(w, ap)
 		// add uninstall thing?
@@ -332,5 +334,18 @@ func settings(w http.ResponseWriter, h *http.Request) {
 			http.SetCookie(w, &http.Cookie{Name: "login", Value: "", MaxAge: -1, Path: "/"})
 			http.Redirect(w, h, ".", 303)
 		}
+	}
+}
+
+func uninst(w http.ResponseWriter, h *http.Request) {
+	if CheckLogin(h) {
+		e := db.Delete(&app{}, "Id = ?", path.Base(h.URL.Path))
+		if e.Error != nil {
+			http.NotFound(w, h)
+			return
+		}
+		http.Redirect(w, h, "/settings/apps", 303)
+	} else {
+		http.Redirect(w, h, "/settings", 303)
 	}
 }
