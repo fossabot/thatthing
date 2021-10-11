@@ -112,7 +112,12 @@ func appconf(w http.ResponseWriter, h *http.Request) {
 		return
 	}
 	if h.URL.Path == "/settings/apps/" {
-		http.Redirect(w, h, "/settings", 303)
+		var ap []app
+		db.Find(&ap)
+		templ := `<!DOCTYPE HTML><html><head><title>Apps</title><link rel="stylesheet" href="/style.css"></head><body><h1>Apps</h1><div class="a"><ul>{{range .}}<li><a href="/settings/apps/{{.Id}}">{{.Name}}</a></li>{{else}}No apps.{{end}}</ul></div></body></html>`
+		v, _ := template.New("webpage").Parse(templ)
+		v.Execute(w, ap)
+		// add uninstall thing?
 		return
 	}
 	ap := strings.Replace(h.URL.Path, "/settings/apps/", "", 1)
@@ -304,7 +309,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				for _, v := range things {
 					d[v.Key] = v.Value
 				}
-				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div><a href="logout"><button style="margin: 1em">Log out</button></a></div></body></html>`
+				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div class="a"><a href="/settings/apps">See apps >>></a></div><div><a href="logout"><button style="margin: 1em">Log out</button></a></div></body></html>`
 				p, _ := template.New("webpage").Parse(page)
 				p.Execute(w, d)
 			}
