@@ -1,3 +1,4 @@
 test.db
 blog*.db
+about*.md
 /apps/*/*.so

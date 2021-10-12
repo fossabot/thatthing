@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"os"
 	"os/exec"
+	"sort"
 	"path"
 	"plugin"
 	"regexp"
@@ -102,6 +103,10 @@ func main() {
 		id, err := thatapp.Lookup("AppId")
 		if err == nil {
 		 	*id.(*string) = v.Id
+		}
+		pt, err := thatapp.Lookup("AppPath")
+		if err == nil {
+			*pt.(*string) = v.Path
 		}
 		ve, err := thatapp.Lookup("Main")
 		if err == nil {
@@ -281,6 +286,7 @@ func root(w http.ResponseWriter, h *http.Request) {
 	} else {
 		filtered = appss
 	}
+	sort.Slice(filtered, func(i, j int) bool { return filtered[i].Name < filtered[j].Name })
 	things := struct {
 		Apps []app
 		Data map[string]string
