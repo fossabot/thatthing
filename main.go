@@ -268,7 +268,7 @@ func root(w http.ResponseWriter, h *http.Request) {
 	for _, v := range thingss {
 		d[v.Key] = v.Value
 	}
-	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title></head><body><div class="a">{{if gt (len .Data.img) 0}}<div><img src="{{.Data.img}}" class="pfp"></div>{{end}}<h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title></head><body><div class="a">{{if gt (len .Data.img) 0}}<div><img src="{{.Data.img}}" class="pfp"></div>{{end}}<h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div><div class="tt">ThatThing</div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var appss []app
 	db.Find(&appss)
@@ -333,7 +333,7 @@ func CheckLogin(h *http.Request) bool {
 
 func settings(w http.ResponseWriter, h *http.Request) {
 	_, err := h.Cookie("login")
-	templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body>{{if gt (len .img.Value) 0}}<div><img src="{{.img.Value}}" class="pfp"></div>{{end}}<h1>Welcome back, {{.name.Value}}</h1><form action="." method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><title>Login</title><link rel="stylesheet" href="../style.css"></head><body>{{if gt (len .img.Value) 0}}<div><img src="{{.img.Value}}" class="pfp"></div>{{end}}<h1>Welcome back, {{.name.Value}}</h1><form action="." method="POST"><label for="p">Password</label><input id="p" type="password" name="pass"><div><input type="submit" value="Sign In"></div></form><div class="tt">ThatThing</div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var name kv
 	db.Table("config").First(&name, "key = ?", "name")
@@ -387,7 +387,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				for _, v := range things {
 					d[v.Key] = v.Value
 				}
-				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div class="a"><a href="/settings/apps">See apps >>></a></div><div><a href="logout"><button style="margin: 1em">Log out</button></a></div></body></html>`
+				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div class="a"><a href="/settings/apps">See apps >>></a></div><div><a href="logout"><button style="margin: 1em">Log out</button></a></div><div class="tt">ThatThing</div></body></html>`
 				p, _ := template.New("webpage").Parse(page)
 				p.Execute(w, d)
 			}
