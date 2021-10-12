@@ -12,6 +12,7 @@ import (
 
 var AppId string
 var AppPath string
+var AppName string
 
 func Main() {
   _, err := os.ReadFile("aboutapp_"+AppId+".md")
@@ -32,18 +33,23 @@ func Mn(w http.ResponseWriter, h *http.Request) {
   <html lang="en" dir="ltr">
     <head>
       <meta charset="utf-8">
-      <title>About</title>
+      <title>{{.B}}</title>
       <link rel="stylesheet" href="/style.css">
     </head>
     <body>
-      <h1>About</h1>
-      <div class="a">{{if lt (len .) 1}}Nothing here 🤷{{else}}{{.}}{{end}}</div>
+      <h1>{{.B}}</h1>
+      <div class="a">{{if lt (len .A) 1}}Nothing here 🤷{{else}}{{.A}}{{end}}</div>
     </body>
   </html>
 `
   strings.Replace(templ, "{{.}}", string(data), 1)
   f, _ := template.New("main").Parse(templ)
-  f.Execute(w, string(cont))
+  f.Execute(w, struct{
+    A string
+    B string}{
+    A: string(cont),
+    B: AppName,
+  })
 }
 
 func Conf(w http.ResponseWriter, h *http.Request) {

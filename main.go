@@ -108,6 +108,10 @@ func main() {
 		if err == nil {
 			*pt.(*string) = v.Path
 		}
+		nm, err := thatapp.Lookup("AppName")
+		if err == nil {
+			*nm.(*string) = v.Name
+		}
 		ve, err := thatapp.Lookup("Main")
 		if err == nil {
 			ve.(func())()
