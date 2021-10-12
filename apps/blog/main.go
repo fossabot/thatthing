@@ -22,10 +22,16 @@ type blog struct {
 	Id    string `gorm:"primaryKey"`
 }
 
+type n struct {
+	K []blog
+	Idd string
+}
+
 var db *gorm.DB
+var AppId string
 
 func Main() {
-	dbb, _ := gorm.Open(sqlite.Open("blog.db"), &gorm.Config{})
+	dbb, _ := gorm.Open(sqlite.Open("blog_"+AppId+".db"), &gorm.Config{})
 	db = dbb
 	db.AutoMigrate(&blog{})
 }
@@ -33,9 +39,12 @@ func Main() {
 func RunMe(w http.ResponseWriter, h *http.Request) {
 	var sh []blog
 	db.Find(&sh)
-	templ := `<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><ul>{{range .}}<li><a href="/apps/blog/blogs/{{.Id}}">{{.Title}}</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
+	templ := `{{$id := .Idd}}<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><ul>{{range .K}}<li><a href="/apps/{{$id}}/blogs/{{.Id}}">{{.Title}}</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
-	t.Execute(w, sh)
+	t.Execute(w, n{
+		sh,
+		AppId,
+	})
 	return
 }
 
@@ -58,9 +67,12 @@ func See(w http.ResponseWriter, h *http.Request) {
 func Setting(w http.ResponseWriter, h *http.Request) {
 	var k []blog
 	db.Find(&k)
-	templ := `<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><a href="/settings/apps/blog/new"><button>New</button></a><hr /><ul>{{range .}}<li><a href="/apps/blog/blogs/{{.Id}}">{{.Title}} ({{.Id}})</a> − <a href="/settings/apps/blog/del/{{.Id}}">Delete</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
+	templ := `{{$id := .Idd}}<!DOCTYPE HTML><html><head><title>Blog</title><link href="/style.css" rel="stylesheet"></head><body><h1>Blog</h1><div class="a"><a href="/settings/apps/{{.Idd}}/new"><button>New</button></a><hr /><ul>{{range .K}}<li><a href="/apps/{{$id}}/blogs/{{.Id}}">{{.Title}} ({{.Id}})</a> − <a href="/settings/apps/{{$id}}/del/{{.Id}}">Delete</a></li>{{else}}No blogs{{end}}</ul></div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
-	t.Execute(w, k)
+	t.Execute(w, n{
+			k,
+			AppId,
+		})
 }
 
 func Nwblg(w http.ResponseWriter, h *http.Request) {

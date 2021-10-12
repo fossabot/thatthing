@@ -76,8 +76,6 @@ func main() {
 	db.Table("config").Create(&kv{"desc", ""})
 	db.Table("config").Create(&kv{"img", ""})
 
-	db.Create(&app{Name: "Blog", Path: "apps/blog", Id: "blog", Public: true})
-
 	http.HandleFunc("/", root)
 	http.HandleFunc("/apps/", apps)
 	http.HandleFunc("/settings/", settings)
@@ -101,6 +99,10 @@ func main() {
 		cmd.Run()
 		os.Rename("main.so", v.Path+"/main.so")
 		thatapp, _ := plugin.Open(v.Path + "/main.so")
+		id, err := thatapp.Lookup("AppId")
+		if err == nil {
+		 	*id.(*string) = v.Id
+		}
 		ve, err := thatapp.Lookup("Main")
 		if err == nil {
 			ve.(func())()
@@ -123,7 +125,12 @@ func instal(w http.ResponseWriter, h *http.Request) {
 		var find app
 		e := db.First(&find, "Id = ?", h.Form["id"][0])
 		if e.Error == nil {
-			fmt.Fprintf(w, "Failed, app is already installed")
+			fmt.Fprintf(w, "Failed, app is already installed (ID)")
+			return
+		}
+		e = db.First(&find, "Path = ?", h.Form["path"][0])
+		if e.Error == nil {
+			fmt.Fprintf(w, "Failed, app is already installed (Path)")
 			return
 		}
 		if !rgx.MatchString(h.Form["id"][0]) {
