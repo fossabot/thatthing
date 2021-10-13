@@ -15,9 +15,9 @@ var AppPath string
 var AppName string
 
 func Main() {
-  _, err := os.ReadFile("aboutapp_"+AppId+".md")
+  _, err := os.ReadFile("data/aboutapp_"+AppId+".md")
   if err != nil {
-    e := os.WriteFile("aboutapp_"+AppId+".md", []byte(""), 0666)
+    e := os.WriteFile("data/aboutapp_"+AppId+".md", []byte(""), 0666)
     if e != nil {
       fmt.Println("Cannot create aboutapp_*.md")
       return
@@ -26,7 +26,7 @@ func Main() {
 }
 
 func Mn(w http.ResponseWriter, h *http.Request) {
-  data, _ := os.ReadFile("aboutapp_"+AppId+".md")
+  data, _ := os.ReadFile("data/aboutapp_"+AppId+".md")
   ns := blackfriday.MarkdownCommon(data)
   cont := bluemonday.UGCPolicy().SanitizeBytes(ns)
   templ := `<!DOCTYPE html>
@@ -57,10 +57,10 @@ func Conf(w http.ResponseWriter, h *http.Request) {
     http.Redirect(w, h, "/settings/apps/" + AppId + "/", 303)
     return
   }
-  data, _ := os.ReadFile("aboutapp_"+AppId+".md")
+  data, _ := os.ReadFile("data/aboutapp_"+AppId+".md")
     if h.Method == "POST" {
       h.ParseForm()
-      e := os.WriteFile("aboutapp_"+AppId+".md", []byte(h.Form["main"][0]), 0666)
+      e := os.WriteFile("data/aboutapp_"+AppId+".md", []byte(h.Form["main"][0]), 0666)
       if e != nil {
         fmt.Fprintf(w, "Failed to save")
         return

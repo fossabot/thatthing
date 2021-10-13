@@ -9,11 +9,11 @@
     <h1>Install an app</h1>
     <form action="." method="POST">
       <label for="name">Name</label>
-      <input type="text" required maxlength="40" id="name" name="name">
+      <input type="text" required maxlength="40" id="name" name="name" placeholder="My cool blog">
       <label for="id">ID (alphanumeric)</label>
-      <input type="text" required maxlength="30" id="id" name="id" pattern="^[a-zA-Z0-9]*$">
+      <input type="text" required maxlength="30" id="id" placeholder="reallycoolblog" name="id" pattern="^[a-zA-Z0-9]*$">
       <label for="path">Path</label>
-      <table class="install"><tr><td>{{.}}</td><td><input type="text" required id="path" name="path"></td></tr></table>
+      <table class="install"><tr><td>{{.}}</td><td><input type="text" required id="path" name="path" placeholder="apps/blog"></td></tr></table>
       <div style="margin: 1em 0"><i>Once installed, you cannot change any of this. Unless you edit the db file. Or you reinstall it. You can change "public" in the app.json file, to privatize/publicize the app. If an app is private, the app can only be accessed when you're logged in. When an app is uninstalled, their data may not be removed automatically, although you can remove it manually. <b>Restart ThatThing after installing an app.</b></i></div>
       <div><input type="submit" value="Install"></div>
     </form>

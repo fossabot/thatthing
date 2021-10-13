@@ -42,7 +42,8 @@ var db *gorm.DB
 
 func main() {
 	fmt.Println("Connecting to database...")
-	dbb, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	os.Mkdir("data", 0777)
+	dbb, err := gorm.Open(sqlite.Open("data/data.db"), &gorm.Config{})
 	db = dbb
 	if err != nil {
 		panic("Failed to connect to the database")
@@ -272,7 +273,7 @@ func root(w http.ResponseWriter, h *http.Request) {
 	for _, v := range thingss {
 		d[v.Key] = v.Value
 	}
-	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title></head><body><div class="a">{{if gt (len .Data.img) 0}}<div><img src="{{.Data.img}}" class="pfp"></div>{{end}}<h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div><div class="tt">ThatThing</div></body></html>`
+	templ := `<!DOCTYPE HTML><html><head><link href="style.css" rel="stylesheet"><title>{{.Data.name}}'s site</title><link rel="shortcut icon" href="{{.Data.img}}"></head><body><div class="a">{{if gt (len .Data.img) 0}}<div><img src="{{.Data.img}}" class="pfp"></div>{{end}}<h1>Hi, I'm {{.Data.name}}.</h1><div>{{.Data.desc}}</div></div><div class="a">{{ $length := len .Apps }}{{if gt $length 0}}<div>While you're here, check some of these:</div>{{end}}<ul>{{range .Apps}}{{if .Public}}<li><a href="/apps/{{.Id}}">{{.Name}}</a></li>{{end}}{{else}}There's nothing here.{{end}}</ul></div><div class="tt">ThatThing{{if .Login}} − <a href="/settings">Settings</a>{{end}}</div></body></html>`
 	t, _ := template.New("webpage").Parse(templ)
 	var appss []app
 	db.Find(&appss)
@@ -294,7 +295,8 @@ func root(w http.ResponseWriter, h *http.Request) {
 	things := struct {
 		Apps []app
 		Data map[string]string
-	}{Apps: filtered, Data: d}
+		Login bool
+	}{Apps: filtered, Data: d, Login: CheckLogin(h)}
 	t.Execute(w, things)
 }
 

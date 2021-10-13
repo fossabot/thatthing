@@ -31,7 +31,7 @@ var db *gorm.DB
 var AppId string
 
 func Main() {
-	dbb, _ := gorm.Open(sqlite.Open("blog_"+AppId+".db"), &gorm.Config{})
+	dbb, _ := gorm.Open(sqlite.Open("data/blog_"+AppId+".db"), &gorm.Config{})
 	db = dbb
 	db.AutoMigrate(&blog{})
 }

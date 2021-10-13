@@ -76,3 +76,21 @@ a {
   font-size: .9em;
   color: grey;
 }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #333333;
+    color: #fff;
+  }
+  a {
+    color: #fff;
+  }
+  .a, form {
+    border-color: #fff;
+  }
+  input, textarea {
+    background-color: transparent;
+    border-color: #fff;
+    color: #fff;
+  }
+}

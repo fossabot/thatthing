@@ -1,4 +1,2 @@
-test.db
-blog*.db
-about*.md
+data/
 /apps/*/*.so
