@@ -11,4 +11,6 @@ COPY *.css ./
 COPY *.html ./
 RUN go build -o /thatthing
 EXPOSE 8080
-CMD ["/thatthing"]
+ENV pass ""
+ENV name ""
+CMD ["sh", "-c", "/thatthing -pass ${pass} -name ${name}"]

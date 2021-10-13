@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"crypto/rand"
 	"fmt"
+	"flag"
 	"github.com/buger/jsonparser"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/term"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"html/template"
@@ -22,7 +21,6 @@ import (
 	"plugin"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -38,9 +36,14 @@ type kv struct {
 	Value string
 }
 
+
+var pass = flag.String("pass", "", "password")
+var name = flag.String("name", "", "name")
+
 var db *gorm.DB
 
 func main() {
+	flag.Parse()
 	prt := os.Getenv("HTTP_PORT")
 	if prt == "" {
 		prt = "8080"
@@ -57,27 +60,29 @@ func main() {
 	db.Table("config").AutoMigrate(&kv{})
 
 	if check("pass") {
-		fmt.Print("Insert a password: ")
-		pass, err := term.ReadPassword(int(syscall.Stdin))
-		if err != nil {
-			panic(err)
+		if *pass == "" {
+			panic("Provide a password using -pass (once it is saved you don't need to pass the flag again)")
+			return
 		}
-		passss, _ := bcrypt.GenerateFromPassword(pass, bcrypt.DefaultCost)
+		passss, _ := bcrypt.GenerateFromPassword([]byte(*pass), bcrypt.DefaultCost)
 		db.Table("config").Create(&kv{"pass", string(passss)})
 		fmt.Println("")
 	}
 
 	if check("name") {
-		fmt.Print("Insert name: ")
-		reader := bufio.NewReader(os.Stdin)
-		text, _ := reader.ReadString('\n')
-		db.Table("config").Create(&kv{"name", strings.TrimSpace(text)})
+		if *name == "" {
+			panic("Provide a name using -name (once it is saved you don't need to pass the flag again)")
+			return
+		}
+		db.Table("config").Create(&kv{"name", strings.TrimSpace(*name)})
 	}
 
 	if check("jwtthingidk") {
 		s, _ := rand.Int(rand.Reader, big.NewInt(int64(999999999999999999)))
 		db.Table("config").Create(&kv{"jwtthingidk", s.String()})
 	}
+
+	fmt.Print("\x0c")
 
 	db.Table("config").Create(&kv{"desc", ""})
 	db.Table("config").Create(&kv{"img", ""})
