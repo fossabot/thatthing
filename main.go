@@ -41,6 +41,10 @@ type kv struct {
 var db *gorm.DB
 
 func main() {
+	prt := os.Getenv("HTTP_PORT")
+	if prt == "" {
+		prt = "8080"
+	}
 	fmt.Println("Connecting to database...")
 	os.Mkdir("data", 0777)
 	dbb, err := gorm.Open(sqlite.Open("data/data.db"), &gorm.Config{})
@@ -120,7 +124,7 @@ func main() {
 	}
 
 	fmt.Println("Running...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":"+prt, nil))
 }
 
 func instal(w http.ResponseWriter, h *http.Request) {
