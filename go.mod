@@ -1,4 +1,4 @@
-module thatthing
+module github.com/liimee/thatthing
 
 go 1.16
 
