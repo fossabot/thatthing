@@ -82,8 +82,6 @@ func main() {
 		db.Table("config").Create(&kv{"jwtthingidk", s.String()})
 	}
 
-	fmt.Print("\x0c")
-
 	db.Table("config").Create(&kv{"desc", ""})
 	db.Table("config").Create(&kv{"img", ""})
 
@@ -129,7 +127,7 @@ func main() {
 	}
 
 	fmt.Println("Running...")
-	log.Fatal(http.ListenAndServe(":"+prt, nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:"+prt, nil))
 }
 
 func instal(w http.ResponseWriter, h *http.Request) {
