@@ -18,6 +18,7 @@ services:
       - POSTGRES_DB=${dbdb:-thatthing}
       - POSTGRES_PASSWORD=${dbpass:?Set database password first}
   server:
+    image: liimee/thatthing:latest
     depends_on:
       - thedb
     build:
