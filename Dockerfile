@@ -13,4 +13,5 @@ RUN go build -o /thatthing
 EXPOSE 8080
 ENV pass ""
 ENV name ""
+ENV db "pg"
 CMD ["sh", "-c", "/thatthing -pass ${pass} -name ${name}"]

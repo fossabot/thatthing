@@ -7,6 +7,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"html/template"
@@ -50,10 +51,26 @@ func main() {
 	}
 	fmt.Println("Connecting to database...")
 	os.Mkdir("data", 0777)
-	dbb, err := gorm.Open(sqlite.Open("data/data.db"), &gorm.Config{})
-	db = dbb
-	if err != nil {
-		panic("Failed to connect to the database")
+	if os.Getenv("db") == "pg" {
+		eee := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable",
+			os.Getenv("dbhost"),
+			os.Getenv("dbport"),
+			os.Getenv("dbdb"),
+			os.Getenv("dbuser"),
+			os.Getenv("dbpass"),
+		)
+		dbb, err := gorm.Open(postgres.Open(eee), &gorm.Config{})
+		db = dbb
+		if err != nil {
+			fmt.Println(err)
+			panic("Failed to connect to the database")
+		}
+	} else {
+		dbb, err := gorm.Open(sqlite.Open("data/data.db"), &gorm.Config{})
+		db = dbb
+		if err != nil {
+			panic("Failed to connect to the database")
+		}
 	}
 
 	db.Table("apps").AutoMigrate(&app{})
@@ -127,7 +144,7 @@ func main() {
 	}
 
 	fmt.Println("Running...")
-	log.Fatal(http.ListenAndServe("0.0.0.0:"+prt, nil))
+	log.Fatal(http.ListenAndServe(":"+prt, nil))
 }
 
 func instal(w http.ResponseWriter, h *http.Request) {

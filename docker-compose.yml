@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  thedb:
+    image: postgres:14.0-alpine
+    container_name: thedb
+    hostname: db
+    networks:
+      - netw
+    ports:
+      - 5432:5432
+      - 8080:8080
+    volumes:
+      - thatthings:/thatthing/
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=${dbdb:-thatthing}
+      - POSTGRES_PASSWORD=${dbpass:?Set database password first}
+  server:
+    depends_on:
+      - thedb
+    build:
+      context: .
+    container_name: server
+    hostname: thatthing
+    networks:
+      - netw
+    ports:
+      - 80:8080
+    environment:
+      - dbuser=${dbuser:-postgres}
+      - dbpass=${dbpass:?Set database password first}
+      - dbhost=${dbhost:-db}
+      - dbport=${dbport:-5432}
+      - dbdb=${dbdb:-thatthing}
+      - db=pg
+      - name=${name:-User}
+      - pass=Password
+      #TODO: add change password page
+    restart: unless-stopped
+    #deploy:
+      #restart_policy:
+        #condition: on-failure
+
+volumes:
+  thatthings:
+
+networks:
+  netw:
+    driver: bridge
