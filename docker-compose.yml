@@ -23,7 +23,7 @@ services:
       - thedb
     build:
       context: .
-    container_name: server
+    container_name: thatthing
     hostname: thatthing
     networks:
       - netw
@@ -38,11 +38,7 @@ services:
       - db=pg
       - name=${name:-User}
       - pass=Password
-      #TODO: add change password page
     restart: unless-stopped
-    #deploy:
-      #restart_policy:
-        #condition: on-failure
 
 volumes:
   thatthings:
