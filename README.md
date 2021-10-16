@@ -13,8 +13,8 @@ I recommend you to install something more important and useful, but if you reall
 git clone https://github.com/liimee/thatthing
 cd thatthing
 
-# create file .env, put:
-# dbpass=<some password>
+# create .env file
+echo "dbpass=<database password>" >> .env
 
 docker-compose up
 ```
