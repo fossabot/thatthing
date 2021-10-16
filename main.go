@@ -112,6 +112,7 @@ func main() {
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "style.css")
 	})
+	http.HandleFunc("/settings/password", passw)
 	http.HandleFunc("/settings/uninstall/", uninst)
 	http.HandleFunc("/settings/install/", instal)
 	http.HandleFunc("/settings/apps/", appconf)
@@ -417,7 +418,7 @@ func settings(w http.ResponseWriter, h *http.Request) {
 				for _, v := range things {
 					d[v.Key] = v.Value
 				}
-				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div class="a"><a href="/settings/apps">See apps >>></a></div><div><a href="logout"><button style="margin: 1em">Log out</button></a></div><div class="tt">ThatThing</div></body></html>`
+				page := `<!DOCTYPE HTML><html><head><link rel="stylesheet" href="../style.css"><title>Settings</title></head><body><h1>Settings</h1><form action="." method="POST"><label for="f1">Name</label><input required id="f1" type="text" name="name" value="{{.name}}"><br /><label for="desc">Description</label><textarea id="desc" name="desc">{{.desc}}</textarea><br /><label for="img">URL of image (square is recommended)</label><input type="url" id="img" name="img" value="{{.img}}"><div><input type="submit" value="Done"></div></form><div class="a"><a href="/settings/apps">See apps >>></a></div><form action="password" method="POST"><label for="old">Current password</label><input type="password" required id="old" name="old"><label for="new">New password</label><input type="password" required id="new" name="new"><div><input type="submit" value="Done"></div></form><div><a href="logout"><button style="margin: 1em">Log out</button></a></div><div class="tt">ThatThing</div></body></html>`
 				p, _ := template.New("webpage").Parse(page)
 				p.Execute(w, d)
 			}
@@ -438,5 +439,30 @@ func uninst(w http.ResponseWriter, h *http.Request) {
 		http.Redirect(w, h, "/settings/apps", 303)
 	} else {
 		http.Redirect(w, h, "/settings", 303)
+	}
+}
+
+func passw(w http.ResponseWriter, h *http.Request) {
+	if !CheckLogin(h) {
+		http.NotFound(w, h)
+		return
+	}
+	if h.Method != "POST" {
+		http.NotFound(w, h)
+		return
+	}
+	h.ParseForm()
+	var thepass kv
+	db.Table("config").First(&thepass, "key = ?", "pass")
+	pass := bcrypt.CompareHashAndPassword([]byte(thepass.Value), []byte(h.Form["old"][0]))
+	if pass == nil {
+		passss, _ := bcrypt.GenerateFromPassword([]byte(h.Form["new"][0]), bcrypt.DefaultCost)
+		thepass.Value = string(passss)
+		db.Table("config").Save(thepass)
+		s, _ := rand.Int(rand.Reader, big.NewInt(int64(999999999999999999)))
+		db.Table("config").Save(&kv{"jwtthingidk", s.String()})
+		http.Redirect(w, h, "/settings", 303)
+	} else {
+		fmt.Fprintf(w, "Failed.")
 	}
 }
